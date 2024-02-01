@@ -48,9 +48,6 @@ if __name__ == "__main__":
     unit_classifier_model_folder = unit_classifier_model_folders[0]
     unit_classifier_params["unit_classifier_model"] = unit_classifier_model_folder.name
 
-    for p in unit_classifier_model_folder.iterdir():
-        print(p)
-
     # load required metrics and model
     noise_neuron_pkl = unit_classifier_model_folder / "noise-neuron_classifier.pkl"
     sua_mua_pkl = unit_classifier_model_folder / "sua-mua_classifier.pkl"

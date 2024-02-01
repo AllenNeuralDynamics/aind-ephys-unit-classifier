@@ -4,18 +4,21 @@ warnings.filterwarnings("ignore")
 
 import numpy as np
 from pathlib import Path
-import pickle
-import time
-from datetime import datetime
 import json
+import time
+from datetime import datetime, timedelta
 
+# SPIKEINTERFACE
 import spikeinterface as si
 import spikeinterface.widgets as sw
 
+from utils import compute_missing_metrics, apply_unit_classifier
+
+# AIND
 from aind_data_schema.core.processing import DataProcess
 
-from utils import compute_missing_metrics, apply_classifiers_v1, apply_classifiers_v2
-
+URL = "https://github.com/AllenNeuralDynamics/aind-ephys-unit-classifier"
+VERSION = "0.1.0"
 
 data_folder = Path("../data")
 results_folder = Path("../results")
@@ -35,7 +38,7 @@ if __name__ == "__main__":
     t_unit_classifier_start_all = time.perf_counter()
 
     # find ecephys folder / or postprocessed
-    data_process_prefix = "data_process_classifier"
+    data_process_prefix = "data_process_unit_classifier"
     
     si.set_global_job_kwargs(**job_kwargs)
 
@@ -48,56 +51,41 @@ if __name__ == "__main__":
     # load required metrics and model
     noise_neuron_pkl = unit_classifier_model_folder / "noise-neuron_classifier.pkl"
     sua_mua_pkl = unit_classifier_model_folder / "sua-mua_classifier.pkl"
-    if (unit_classifier_model_folder / "metrics.json").is_file():
-        print("Noise models V2")
-        version = 2
-        with open(unit_classifier_model_folder / "metrics.json", "r") as f:
-            required_metrics = json.load(f)
-    else:
-        print("Noise models V1")
-        version = 1
-        with open(unit_classifier_model_folder / "noise-neuron_metrics.json", "r") as f:
-            noise_neuron_metrics = json.load(f)
+    assert noise_neuron_pkl.is_file(), "Noise/Neuron model not found"
+    assert sua_mua_pkl.is_file(), "SUA/MUA model not found"
+    assert (unit_classifier_model_folder / "metrics.json").is_file(), "Required metrics not found"
+    with open(unit_classifier_model_folder / "metrics.json", "r") as f:
+        required_metrics = json.load(f)
 
-        if (unit_classifier_model_folder / "noise-neuron_preprocess.pkl").is_file():
-            noise_neuron_preprocess_pkl = unit_classifier_model_folder / "noise-neuron_preprocess.pkl"
-        else:
-            noise_neuron_preprocess_pkl = None
-        if (unit_classifier_model_folder / "sua-mua_preprocess.pkl").is_file():
-            sua_mua_preprocess_pkl = unit_classifier_model_folder / "sua-mua_preprocess.pkl"
-        else:
-            sua_mua_preprocess_pkl = None
-        required_metrics = list(set(noise_neuron_metrics).union(set(sua_mua_metrics)))
-
-    capsule_mode = False
+    pipeline_mode = True
     if len(ecephys_sorted_folders) > 0:
         # capsule mode
         assert len(ecephys_sorted_folders) == 1, "Attach one sorted asset at a time"
         ecephys_sorted_folder = ecephys_sorted_folders[0]
         postprocessed_folder = ecephys_sorted_folder / "postprocessed"
         session_name = ecephys_sorted_folder.name[:ecephys_sorted_folder.name.find("_sorted")]
-        capsule_mode = True
+        pipeline_mode = False
+        visualization_output = {}
     elif (data_folder / "postprocessing_pipeline_output_test").is_dir():
         print("\n*******************\n**** TEST MODE ****\n*******************\n")
         postprocessed_folder = data_folder / "postprocessing_pipeline_output_test"
     else:
         postprocessed_folder = data_folder
 
-    if capsule_mode:
-        postprocessed_folders = [p for p in postprocessed_folder.iterdir() if p.is_dir()]
-    else:
+    if pipeline_mode:
         postprocessed_folders = [p for p in postprocessed_folder.iterdir() if "postprocessed_" in p.name and "-sorting" not in p.name]
+    else:
+        postprocessed_folders = [p for p in postprocessed_folder.iterdir() if p.is_dir()]        
 
     for postprocessed_folder in postprocessed_folders:
         datetime_start_unit_classifier = datetime.now()
         t_unit_classifier_start = time.perf_counter()
-        if capsule_mode:
-            recording_name = postprocessed_folder.name
-        else:
+        if pipeline_mode:
             recording_name = ("_").join(postprocessed_folder.name.split("_")[1:])
+        else:
+            recording_name = postprocessed_folder.name
         unit_classifier_output_process_json = results_folder / f"{data_process_prefix}_{recording_name}.json"
-        unit_classifier_output_csv_file = results_folder / f"noiseclassification_{recording_name}.csv"
-        unit_classifier_viz_output_file = results_folder / f"viz_noiseclassification_{recording_name}.txt"
+        unit_classifier_output_csv_file = results_folder / f"unit_classifier_{recording_name}.csv"
 
         print(f"Applying noise classification to recording: {recording_name}")
 
@@ -105,30 +93,18 @@ if __name__ == "__main__":
 
         input_metrics = compute_missing_metrics(we, required_metrics, n_jobs=n_jobs, verbose=True)
 
-        if version == 1:
-            prediction_df = apply_classifiers_v1(
-                metrics=input_metrics,
-                noise_neuron_classifier_pkl=noise_neuron_pkl, 
-                sua_mua_classifier_pkl=sua_mua_pkl,
-                noise_neuron_preprocess_pkl= noise_neuron_preprocess_pkl,
-                sua_mua_preprocess_pkl=sua_mua_preprocess_pkl,
-                preprocess=True
-            )
-        else:
-            prediction_df = apply_classifiers_v2(
-                metrics=input_metrics,
-                noise_neuron_classifier_pkl=noise_neuron_pkl, 
-                sua_mua_classifier_pkl=sua_mua_pkl
-            )
+        prediction_df = apply_unit_classifier(
+            metrics=input_metrics,
+            noise_neuron_classifier_pkl=noise_neuron_pkl, 
+            sua_mua_classifier_pkl=sua_mua_pkl
+        )
 
         decoder_label = prediction_df["decoder_label"]
-        we.sorting.set_property("decoder_label", prediction_df["decoder_label"])
-        we.sorting.set_property("decoder_probability", np.round(prediction_df["decoder_probability"], 3))
 
-        n_sua = np.sum(decoder_label == 'sua')
-        n_mua = np.sum(decoder_label == 'mua')
-        n_noise = np.sum(decoder_label == 'noise')
-        n_units = len(we.unit_ids)
+        n_sua = int(np.sum(decoder_label == 'sua'))
+        n_mua = int(np.sum(decoder_label == 'mua'))
+        n_noise = int(np.sum(decoder_label == 'noise'))
+        n_units = int(len(we.unit_ids))
 
         print(f"\tNOISE: {n_noise} / {n_units}")
         print(f"\tSUA: {n_sua} / {n_units}")
@@ -155,7 +131,7 @@ if __name__ == "__main__":
             mua_units=n_mua
         )
         
-        if not capsule_mode:
+        if pipeline_mode:
             unit_classifier_process = DataProcess(
                     name="Ephys curation",
                     software_version=VERSION, # either release or git commit
@@ -168,8 +144,8 @@ if __name__ == "__main__":
                     outputs=unit_classifier_outputs,
                     notes=unit_classifier_notes
                 )
-            with open(curation_output_process_json, "w") as f:
-                f.write(curation_process.json(indent=3))
+            with open(unit_classifier_output_process_json, "w") as f:
+                f.write(unit_classifier_process.model_dump_json(indent=3))
         else:
             # capsule mode
             if GENERATE_VISUALIZATION_LINK:
@@ -190,12 +166,18 @@ if __name__ == "__main__":
                         figlabel=f"{session_name} - {recording_name} - {sorter_name} - Noise decoder summary",
                         backend="sortingview"
                     )
+                    # remove escape characters
                     visualization_txt = w.url.replace('\\"', "%22")
                     visualization_txt = visualization_txt.replace('#', "%23")
-                    # remove escape characters
-                    unit_classifier_viz_output_file.write_text(visualization_txt)
+                    visualization_output[recording_name] = visualization_txt
                 except Exception as e:
                     print("KCL error", e)
+
+    # Save visualization links
+    if not pipeline_mode:
+        visualization_output_file = results_folder / f"visualization_output.json"
+        with open(visualization_output_file, "w") as f:
+            json.dump(visualization_output, f)
 
     t_unit_classifier_end_all = time.perf_counter()
     elapsed_time_unit_classifier_all = np.round(t_unit_classifier_end_all - t_unit_classifier_start_all, 2)

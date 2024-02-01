@@ -1,4 +1,5 @@
 import warnings
+
 warnings.filterwarnings("ignore")
 
 import pickle
@@ -58,7 +59,7 @@ qm_metrics_map = dict(
     sync_spike_4="synchrony",
     sync_spike_8="synchrony",
     nn_hit_rate="nearest_neighbor",
-    nn_miss_rate="nearest_neighbor"
+    nn_miss_rate="nearest_neighbor",
 )
 
 
@@ -72,7 +73,7 @@ def compute_missing_metrics(we, required_metrics, qm_params=None, verbose=False,
     all_metrics = qm.merge(tm, left_index=True, right_index=True)
 
     if qm_params is None:
-        qm_params = default_qm_params 
+        qm_params = default_qm_params
 
     if all([m in all_metrics.columns for m in required_metrics]):
         if verbose:
@@ -85,12 +86,15 @@ def compute_missing_metrics(we, required_metrics, qm_params=None, verbose=False,
             if m not in all_metrics.columns:
                 missing_tm_metrics.append(m)
         missing_tm_metrics = list(np.unique(missing_tm_metrics))
-        include_multi_channel_metrics = any([m in get_multi_channel_template_metric_names() for m in missing_tm_metrics])
+        include_multi_channel_metrics = any(
+            [m in get_multi_channel_template_metric_names() for m in missing_tm_metrics]
+        )
         if verbose:
             print(f"Computing missing template metrics: {missing_tm_metrics}")
 
-        tm_new = spost.compute_template_metrics(we, metric_names=missing_tm_metrics,
-                                                include_multi_channel_metrics=include_multi_channel_metrics)
+        tm_new = spost.compute_template_metrics(
+            we, metric_names=missing_tm_metrics, include_multi_channel_metrics=include_multi_channel_metrics
+        )
 
         required_qm = [m for m in required_metrics if m not in spost.get_template_metric_names()]
 
@@ -103,8 +107,7 @@ def compute_missing_metrics(we, required_metrics, qm_params=None, verbose=False,
 
         if verbose:
             print(f"Computing missing quality metrics: {missing_qm_metrics}")
-        qm_new = sqm.compute_quality_metrics(we, metric_names=missing_qm_metrics, n_jobs=n_jobs,
-                                             qm_params=qm_params)
+        qm_new = sqm.compute_quality_metrics(we, metric_names=missing_qm_metrics, n_jobs=n_jobs, qm_params=qm_params)
 
         all_metrics = all_metrics.merge(qm_new, left_index=True, right_index=True)
         all_metrics = all_metrics.merge(tm_new, left_index=True, right_index=True)
@@ -114,32 +117,33 @@ def compute_missing_metrics(we, required_metrics, qm_params=None, verbose=False,
 
         return all_metrics
 
+
 def apply_unit_classifier(metrics, noise_neuron_classifier_pkl, sua_mua_classifier_pkl):
     # Load pickles
-    with open(noise_neuron_classifier_pkl, 'rb') as file:
+    with open(noise_neuron_classifier_pkl, "rb") as file:
         noise_decoder = pickle.load(file)
 
-    with open(sua_mua_classifier_pkl, 'rb') as file:
+    with open(sua_mua_classifier_pkl, "rb") as file:
         sua_decoder = pickle.load(file)
 
     # Prepare input data
     input_data = metrics.copy(deep=True)
-    input_data = input_data.astype('float32')
+    input_data = input_data.astype("float32")
     input_data[np.isinf(input_data)] = np.nan
 
     original_test_index = input_data.index.values
 
     # Apply noise classifier
     noise_predictions = noise_decoder.predict(input_data)
-    noise_prob  = noise_decoder.predict_proba(input_data)[:, 1]
+    noise_prob = noise_decoder.predict_proba(input_data)[:, 1]
 
-    input_data['decoder_label'] = noise_predictions
-    input_data['decoder_label'] = input_data['decoder_label'].map({1: 'noise', 0: 'neural'})
-    input_data['decoder_probability'] = noise_prob
+    input_data["decoder_label"] = noise_predictions
+    input_data["decoder_label"] = input_data["decoder_label"].map({1: "noise", 0: "neural"})
+    input_data["decoder_probability"] = noise_prob
 
     # Filter rows where the noise prediction was not 1 (not noise)
-    input_data_sua = input_data[input_data['decoder_label'] != 'noise']
-    input_data_sua = input_data_sua.drop(columns=['decoder_label', 'decoder_probability'], axis=1)
+    input_data_sua = input_data[input_data["decoder_label"] != "noise"]
+    input_data_sua = input_data_sua.drop(columns=["decoder_label", "decoder_probability"], axis=1)
 
     # Apply SUA classifier
     if not input_data_sua.empty:
@@ -148,13 +152,13 @@ def apply_unit_classifier(metrics, noise_neuron_classifier_pkl, sua_mua_classifi
         # set the probability to 1 - p for MUA
         sua_prob[sua_predictions == 0] = 1 - sua_prob[sua_predictions == 0]
 
-        input_data_sua['decoder_label'] = sua_predictions
-        input_data_sua['decoder_label'] = input_data_sua['decoder_label'].map({1: 'sua', 0: 'mua'})
-        input_data_sua['decoder_probability'] = sua_prob
+        input_data_sua["decoder_label"] = sua_predictions
+        input_data_sua["decoder_label"] = input_data_sua["decoder_label"].map({1: "sua", 0: "mua"})
+        input_data_sua["decoder_probability"] = sua_prob
 
         # Update the original DataFrame with SUA predictions
-        input_data.loc[input_data_sua.index, 'decoder_label'] = input_data_sua['decoder_label']
-        input_data.loc[input_data_sua.index, 'decoder_probability'] = input_data_sua['decoder_probability']
+        input_data.loc[input_data_sua.index, "decoder_label"] = input_data_sua["decoder_label"]
+        input_data.loc[input_data_sua.index, "decoder_probability"] = input_data_sua["decoder_probability"]
 
     # Save the result to a CSV file
     input_data = input_data.set_index(original_test_index)

@@ -94,7 +94,7 @@ if __name__ == "__main__":
         unit_classifier_output_process_json = results_folder / f"{data_process_prefix}_{recording_name}.json"
         unit_classifier_output_csv_file = results_folder / f"unit_classifier_{recording_name}.csv"
 
-        print(f"Applying noise classification to recording: {recording_name}")
+        print(f"Applying unit classifier to recording: {recording_name}")
 
         we = si.load_waveforms(postprocessed_folder, with_recording=False)
 
@@ -183,4 +183,4 @@ if __name__ == "__main__":
 
     t_unit_classifier_end_all = time.perf_counter()
     elapsed_time_unit_classifier_all = np.round(t_unit_classifier_end_all - t_unit_classifier_start_all, 2)
-    print(f"NOISE CLASSIFICATION time: {elapsed_time_unit_classifier_all}s")
+    print(f"UNIT CLASSIFIER time: {elapsed_time_unit_classifier_all}s")

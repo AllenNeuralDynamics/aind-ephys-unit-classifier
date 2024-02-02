@@ -78,6 +78,9 @@ def compute_missing_metrics(we, required_metrics, qm_params=None, verbose=False,
     if all([m in all_metrics.columns for m in required_metrics]):
         if verbose:
             print("All metrics available")
+        # re-sort with correct order
+        all_metrics = all_metrics[required_metrics]
+
         return all_metrics
     else:
         required_tm = [m for m in required_metrics if m in spost.get_template_metric_names()]

@@ -1,12 +1,6 @@
 #!/usr/bin/env bash
 set -e
 
-git clone https://github.com/SpikeInterface/spikeinterface.git 
-cd spikeinterface 
-git checkout 193a9b375afca1564d26de8dde86a50cfe30e7db
-pip install --no-cache-dir --ignore-installed .[full,widgets]
-cd ..
-
 pip uninstall -y traitlets
 pip install --no-cache-dir --ignore-installed traitlets==5.9.0
 

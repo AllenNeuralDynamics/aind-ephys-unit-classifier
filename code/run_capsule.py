@@ -44,7 +44,9 @@ if __name__ == "__main__":
     si.set_global_job_kwargs(**job_kwargs)
 
     ecephys_sorted_folders = [
-        p for p in data_folder.iterdir() if p.is_dir() and "ecephys" in p.name and "sorted" in p.name
+        p
+        for p in data_folder.iterdir()
+        if p.is_dir() and "ecephys" in p.name or "behavior" in p.name and "sorted" in p.name
     ]
     unit_classifier_model_folders = [
         p for p in data_folder.iterdir() if p.is_dir() and "unit_classifier_model" in p.name

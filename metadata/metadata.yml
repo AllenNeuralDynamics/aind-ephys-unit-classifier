@@ -1,5 +1,5 @@
 metadata_version: 1
-name: aind-ephys-unit-classifier
+name: Unit Classifier Ecephys
 description: Basic structure of a capsule to be customized as needed.
 authors:
 - name: AIND

@@ -8,6 +8,7 @@ from pathlib import Path
 import json
 import time
 from datetime import datetime, timedelta
+import pandas as pd
 
 # SPIKEINTERFACE
 import spikeinterface as si

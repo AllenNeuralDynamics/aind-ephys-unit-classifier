@@ -20,7 +20,7 @@ from utils import compute_missing_metrics, apply_unit_classifier
 from aind_data_schema.core.processing import DataProcess
 
 URL = "https://github.com/AllenNeuralDynamics/aind-ephys-unit-classifier"
-VERSION = "0.1.0"
+VERSION = "1.0"
 
 data_folder = Path("../data")
 results_folder = Path("../results")

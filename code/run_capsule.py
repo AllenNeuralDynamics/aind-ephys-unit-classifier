@@ -98,7 +98,7 @@ if __name__ == "__main__":
         unit_classifier_output_csv_file = results_folder / f"unit_classifier_{recording_name}.csv"
 
         try:
-            we = si.load_waveforms(postprocessed_folder, with_recording=False)
+            analyzer = si.load_sorting_analyzer(postprocessed_folder)
             print(f"Applying unit classifier to recording: {recording_name}")
         except:
             print(f"Spike sorting failed on {recording_name}. Skipping unit classification")
@@ -107,9 +107,7 @@ if __name__ == "__main__":
             mock_df.to_csv(unit_classifier_output_csv_file)
             continue
 
-        we = si.load_waveforms(postprocessed_folder, with_recording=False)
-
-        input_metrics = compute_missing_metrics(we, required_metrics, n_jobs=n_jobs, verbose=True)
+        input_metrics = compute_missing_metrics(analyzer, required_metrics, n_jobs=n_jobs, verbose=True)
 
         prediction_df = apply_unit_classifier(
             metrics=input_metrics, noise_neuron_classifier_pkl=noise_neuron_pkl, sua_mua_classifier_pkl=sua_mua_pkl
@@ -120,7 +118,7 @@ if __name__ == "__main__":
         n_sua = int(np.sum(decoder_label == "sua"))
         n_mua = int(np.sum(decoder_label == "mua"))
         n_noise = int(np.sum(decoder_label == "noise"))
-        n_units = int(len(we.unit_ids))
+        n_units = int(len(analyzer.unit_ids))
 
         print(f"\tNOISE: {n_noise} / {n_units}")
         print(f"\tSUA: {n_sua} / {n_units}")
@@ -162,8 +160,8 @@ if __name__ == "__main__":
         else:
             # capsule mode
             if GENERATE_VISUALIZATION_LINK:
-                we.sorting.set_property("decoder_label", prediction_df["decoder_label"])
-                we.sorting.set_property("decoder_prob", np.round(prediction_df["decoder_probability"], 3))
+                analyzer.sorting.set_property("decoder_label", prediction_df["decoder_label"])
+                analyzer.sorting.set_property("decoder_prob", np.round(prediction_df["decoder_probability"], 3))
                 unit_table_properties = ["decoder_label", "decoder_prob"]
 
                 # TODO: grab from processing.json
@@ -171,7 +169,7 @@ if __name__ == "__main__":
 
                 try:
                     w = sw.plot_sorting_summary(
-                        we,
+                        analyzer,
                         max_amplitudes_per_unit=500,
                         unit_table_properties=unit_table_properties,
                         curation=True,

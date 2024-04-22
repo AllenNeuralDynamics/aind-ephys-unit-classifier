@@ -1,7 +1,11 @@
-# hash:sha256:4b71c0c2efdcb34782f194451153d5f7bf4fd143ac12f14e31f6c61378fa32e6
-FROM registry.codeocean.allenneuraldynamics.org/codeocean/jupyterlab:3.6.1-miniconda4.12.0-python3.9-ubuntu20.04
+# hash:sha256:07e562da92ad598381fc7ee0ed7c3b5694f9a69706622b522f67d35533dff9e7
+ARG REGISTRY_HOST
+FROM $REGISTRY_HOST/codeocean/jupyterlab:3.6.1-miniconda4.12.0-python3.9-ubuntu20.04
 
 ARG DEBIAN_FRONTEND=noninteractive
+ARG CUSTOM_KEY
+ARG CUSTOM_KEY_2
+ARG CUSTOM_KEY_3
 
 ARG GIT_ASKPASS
 ARG GIT_ACCESS_TOKEN
@@ -15,7 +19,6 @@ RUN pip install -U --no-cache-dir \
     pyvips==2.2.1 \
     scikit-optimize==0.9.0 \
     seaborn==0.13.0 \
-    spikeinterface[full]==0.100.0 \
     umap-learn==0.5.4 \
     wavpack-numcodecs==0.1.5 \
     xgboost==2.0.2

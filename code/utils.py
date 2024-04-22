@@ -63,12 +63,12 @@ qm_metrics_map = dict(
 )
 
 
-def compute_missing_metrics(we, required_metrics, qm_params=None, verbose=False, n_jobs=1):
+def compute_missing_metrics(analyzer, required_metrics, qm_params=None, verbose=False, n_jobs=1):
     """
     TODO
     """
-    qm = we.load_extension("quality_metrics").get_data()
-    tm = we.load_extension("template_metrics").get_data()
+    qm = analyzer.get_extension("quality_metrics").get_data()
+    tm = analyzer.get_extension("template_metrics").get_data()
 
     all_metrics = qm.merge(tm, left_index=True, right_index=True)
 
@@ -96,7 +96,7 @@ def compute_missing_metrics(we, required_metrics, qm_params=None, verbose=False,
             print(f"Computing missing template metrics: {missing_tm_metrics}")
 
         tm_new = spost.compute_template_metrics(
-            we, metric_names=missing_tm_metrics, include_multi_channel_metrics=include_multi_channel_metrics
+            analyzer, metric_names=missing_tm_metrics, include_multi_channel_metrics=include_multi_channel_metrics
         )
 
         required_qm = [m for m in required_metrics if m not in spost.get_template_metric_names()]
@@ -110,7 +110,7 @@ def compute_missing_metrics(we, required_metrics, qm_params=None, verbose=False,
 
         if verbose:
             print(f"Computing missing quality metrics: {missing_qm_metrics}")
-        qm_new = sqm.compute_quality_metrics(we, metric_names=missing_qm_metrics, n_jobs=n_jobs, qm_params=qm_params)
+        qm_new = sqm.compute_quality_metrics(analyzer, metric_names=missing_qm_metrics, n_jobs=n_jobs, qm_params=qm_params)
 
         all_metrics = all_metrics.merge(qm_new, left_index=True, right_index=True)
         all_metrics = all_metrics.merge(tm_new, left_index=True, right_index=True)

@@ -105,6 +105,7 @@ if __name__ == "__main__":
             print(f"Applying unit classifier to recording: {recording_name}")
         except Exception as e:
             print(f"Spike sorting failed on {recording_name}. Skipping unit classification")
+            print(f"Postprocessed folder: {postprocessed_folder}")
             print(e)
             # create an mock result file (needed for pipeline)
             mock_df = pd.DataFrame()

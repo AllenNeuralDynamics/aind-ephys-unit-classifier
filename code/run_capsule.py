@@ -103,8 +103,9 @@ if __name__ == "__main__":
         try:
             we = si.load_waveforms(postprocessed_folder, with_recording=False)
             print(f"Applying unit classifier to recording: {recording_name}")
-        except:
+        except Exception as e:
             print(f"Spike sorting failed on {recording_name}. Skipping unit classification")
+            print(e)
             # create an mock result file (needed for pipeline)
             mock_df = pd.DataFrame()
             mock_df.to_csv(unit_classifier_output_csv_file)

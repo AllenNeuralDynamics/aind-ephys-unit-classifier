@@ -29,7 +29,7 @@ n_jobs = -1
 job_kwargs = dict(n_jobs=n_jobs)
 
 unit_classifier_params = {}
-GENERATE_VISUALIZATION_LINK = True
+GENERATE_VISUALIZATION_LINK = False
 LABEL_CHOICES = ["noise", "SUA", "MUA", "pSUA", "pMUA"]
 
 
@@ -79,6 +79,9 @@ if __name__ == "__main__":
         postprocessed_folder = data_folder / "postprocessing_pipeline_output_test"
     else:
         postprocessed_folder = data_folder
+
+    print(f"Pipeline mode: {pipeline_mode}")
+    print(f"Postprocessed folder: {postprocessed_folder}")
 
     if pipeline_mode:
         postprocessed_folders = [

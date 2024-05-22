@@ -3,6 +3,7 @@ import warnings
 
 warnings.filterwarnings("ignore")
 
+import argparse
 import numpy as np
 from pathlib import Path
 import json
@@ -29,12 +30,26 @@ n_jobs = -1
 job_kwargs = dict(n_jobs=n_jobs)
 
 unit_classifier_params = {}
-GENERATE_VISUALIZATION_LINK = False
 LABEL_CHOICES = ["noise", "SUA", "MUA", "pSUA", "pMUA"]
+
+# define argument parser
+parser = argparse.ArgumentParser(description="Preprocess AIND Neurpixels data")
+
+generate_link_group = parser.add_mutually_exclusive_group()
+generate_link_help = "Whether to generat a figurl link with the decoder labels"
+generate_link_group.add_argument("--generate-link", action="store_true", help=generate_link_help)
+generate_link_group.add_argument("static_generate_link", nargs="?", default="false", help=generate_link_help)
 
 
 if __name__ == "__main__":
     ####### UNIT CLASSIFIER ########
+    args = parser.parse_args()
+
+    GENERATE_LINK = args.generate_link or args.static_generate_link == "true"
+
+    print(f"Running unit classifier with the following parameters:")
+    print(f"\tGENERATE_LINK: {GENERATE_LINK}")
+
     print("UNIT CLASSIFIER")
     unit_classifier_notes = ""
     t_unit_classifier_start_all = time.perf_counter()
@@ -166,7 +181,7 @@ if __name__ == "__main__":
                 f.write(unit_classifier_process.model_dump_json(indent=3))
         else:
             # capsule mode
-            if GENERATE_VISUALIZATION_LINK:
+            if GENERATE_LINK:
                 we.sorting.set_property("decoder_label", prediction_df["decoder_label"])
                 we.sorting.set_property("decoder_prob", np.round(prediction_df["decoder_probability"], 3))
                 unit_table_properties = ["decoder_label", "decoder_prob"]

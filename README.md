@@ -11,6 +11,16 @@ It uses pre-trained models to classify units as:
 - MUA (multi-unit activity)
 - SUA (single-unit activity)
 
+The model was developed by the [Musall's Group](https://brainstatelab.wordpress.com/) at the Forschungszentrum Jülich,
+Germany.
+
+The model files are in the `code/unit_classifier_models_v1.0` folder.
+
+- `metrics.json`: list of required metrics for the models
+- `noise-neuron_classifier.pkl`: the `scikit-learn` model for noise *VS* neuron classification
+- `sua-mua_classifier.pkl`: the `scikit-learn` model for sua *VS* mua classification
+
+
 ### Inputs
 
 The `data/` folder must include the output of the [aind-ephys-postprocessing](https://github.com/AllenNeuralDynamics/aind-ephys-postprocessing), including the `postprocessed_{recording_name}` folder.
@@ -18,12 +28,6 @@ The `data/` folder must include the output of the [aind-ephys-postprocessing](ht
 ### Parameters
 
 The `code/run` script takes no arguments. 
-
-A folder containing the pre-trained models must be in the `data/` folder, including:
-
-- `metrics.json`: list of required metrics for the models
-- `noise-neuron_classifier.pkl`: the scikit-learn model for noise vs neuron classification
-- `sua-mua_classifier.pkl`: the scikit-learn model for sua vs mua classification
 
 
 ### Output

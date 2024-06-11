@@ -24,18 +24,17 @@ VERSION = "1.0"
 
 data_folder = Path("../data")
 results_folder = Path("../results")
+
+this_folder = Path(__file__).parent
+
 n_jobs = -1
-
 job_kwargs = dict(n_jobs=n_jobs)
-
-unit_classifier_params = {}
-GENERATE_VISUALIZATION_LINK = True
-LABEL_CHOICES = ["noise", "SUA", "MUA", "pSUA", "pMUA"]
 
 
 if __name__ == "__main__":
     ####### UNIT CLASSIFIER ########
     print("UNIT CLASSIFIER")
+    unit_classifier_params = {}
     unit_classifier_notes = ""
     t_unit_classifier_start_all = time.perf_counter()
 
@@ -50,7 +49,7 @@ if __name__ == "__main__":
         if p.is_dir() and "ecephys" in p.name or "behavior" in p.name and "sorted" in p.name
     ]
     unit_classifier_model_folders = [
-        p for p in data_folder.iterdir() if p.is_dir() and "unit_classifier_model" in p.name
+        p for p in this_folder.iterdir() if p.is_dir() and "unit_classifier_model" in p.name
     ]
     assert len(unit_classifier_model_folders) == 1
     unit_classifier_model_folder = unit_classifier_model_folders[0]
@@ -73,7 +72,6 @@ if __name__ == "__main__":
         postprocessed_folder = ecephys_sorted_folder / "postprocessed"
         session_name = ecephys_sorted_folder.name[: ecephys_sorted_folder.name.find("_sorted")]
         pipeline_mode = False
-        visualization_output = {}
     elif (data_folder / "postprocessing_pipeline_output_test").is_dir():
         print("\n*******************\n**** TEST MODE ****\n*******************\n")
         postprocessed_folder = data_folder / "postprocessing_pipeline_output_test"
@@ -85,7 +83,9 @@ if __name__ == "__main__":
             p for p in postprocessed_folder.iterdir() if "postprocessed_" in p.name and "-sorting" not in p.name
         ]
     else:
-        postprocessed_folders = [p for p in postprocessed_folder.iterdir() if p.is_dir()]
+        postprocessed_folders = [
+            p for p in postprocessed_folder.iterdir() if p.is_dir() and "-sorting" not in p.name
+        ]
 
     for postprocessed_folder in postprocessed_folders:
         datetime_start_unit_classifier = datetime.now()
@@ -106,8 +106,6 @@ if __name__ == "__main__":
             mock_df = pd.DataFrame()
             mock_df.to_csv(unit_classifier_output_csv_file)
             continue
-
-        we = si.load_waveforms(postprocessed_folder, with_recording=False)
 
         input_metrics = compute_missing_metrics(we, required_metrics, n_jobs=n_jobs, verbose=True)
 
@@ -159,38 +157,6 @@ if __name__ == "__main__":
             )
             with open(unit_classifier_output_process_json, "w") as f:
                 f.write(unit_classifier_process.model_dump_json(indent=3))
-        else:
-            # capsule mode
-            if GENERATE_VISUALIZATION_LINK:
-                we.sorting.set_property("decoder_label", prediction_df["decoder_label"])
-                we.sorting.set_property("decoder_prob", np.round(prediction_df["decoder_probability"], 3))
-                unit_table_properties = ["decoder_label", "decoder_prob"]
-
-                # TODO: grab from processing.json
-                sorter_name = "kilosort2_5"
-
-                try:
-                    w = sw.plot_sorting_summary(
-                        we,
-                        max_amplitudes_per_unit=500,
-                        unit_table_properties=unit_table_properties,
-                        curation=True,
-                        label_choices=label_choices,
-                        figlabel=f"{session_name} - {recording_name} - {sorter_name} - Noise decoder summary",
-                        backend="sortingview",
-                    )
-                    # remove escape characters
-                    visualization_txt = w.url.replace('\\"', "%22")
-                    visualization_txt = visualization_txt.replace("#", "%23")
-                    visualization_output[recording_name] = visualization_txt
-                except Exception as e:
-                    print("KCL error", e)
-
-    # Save visualization links
-    if not pipeline_mode:
-        visualization_output_file = results_folder / f"visualization_output.json"
-        with open(visualization_output_file, "w") as f:
-            json.dump(visualization_output, f)
 
     t_unit_classifier_end_all = time.perf_counter()
     elapsed_time_unit_classifier_all = np.round(t_unit_classifier_end_all - t_unit_classifier_start_all, 2)

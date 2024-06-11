@@ -23,13 +23,13 @@ VERSION = "0.1.0"
 
 data_folder = Path("../data")
 results_folder = Path("../results")
-n_jobs = -1
 
+this_folder = Path(__file__).parent
+
+n_jobs = -1
 job_kwargs = dict(n_jobs=n_jobs)
 
 unit_classifier_params = {}
-GENERATE_VISUALIZATION_LINK = True
-LABEL_CHOICES = ["noise", "SUA", "MUA", "pSUA", "pMUA"]
 
 
 if __name__ == "__main__":
@@ -49,7 +49,7 @@ if __name__ == "__main__":
         if p.is_dir() and "ecephys" in p.name or "behavior" in p.name and "sorted" in p.name
     ]
     unit_classifier_model_folders = [
-        p for p in data_folder.iterdir() if p.is_dir() and "unit_classifier_model" in p.name
+        p for p in this_folder.iterdir() if p.is_dir() and "unit_classifier_model" in p.name
     ]
     assert len(unit_classifier_model_folders) == 1
     unit_classifier_model_folder = unit_classifier_model_folders[0]
@@ -72,7 +72,6 @@ if __name__ == "__main__":
         postprocessed_folder = ecephys_sorted_folder / "postprocessed"
         session_name = ecephys_sorted_folder.name[: ecephys_sorted_folder.name.find("_sorted")]
         pipeline_mode = False
-        visualization_output = {}
     elif (data_folder / "postprocessing_pipeline_output_test").is_dir():
         print("\n*******************\n**** TEST MODE ****\n*******************\n")
         postprocessed_folder = data_folder / "postprocessing_pipeline_output_test"
@@ -84,7 +83,9 @@ if __name__ == "__main__":
             p for p in postprocessed_folder.iterdir() if "postprocessed_" in p.name and "-sorting" not in p.name
         ]
     else:
-        postprocessed_folders = [p for p in postprocessed_folder.iterdir() if p.is_dir()]
+        postprocessed_folders = [
+            p for p in postprocessed_folder.iterdir() if p.is_dir() and "-sorting" not in p.name
+        ]
 
     for postprocessed_folder in postprocessed_folders:
         datetime_start_unit_classifier = datetime.now()

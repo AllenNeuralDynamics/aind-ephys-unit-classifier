@@ -8,6 +8,7 @@ from pathlib import Path
 import json
 import time
 from datetime import datetime, timedelta
+import pandas as pd
 
 # SPIKEINTERFACE
 import spikeinterface as si
@@ -19,7 +20,7 @@ from utils import compute_missing_metrics, apply_unit_classifier
 from aind_data_schema.core.processing import DataProcess
 
 URL = "https://github.com/AllenNeuralDynamics/aind-ephys-unit-classifier"
-VERSION = "0.1.0"
+VERSION = "1.0"
 
 data_folder = Path("../data")
 results_folder = Path("../results")
@@ -97,7 +98,15 @@ if __name__ == "__main__":
         unit_classifier_output_process_json = results_folder / f"{data_process_prefix}_{recording_name}.json"
         unit_classifier_output_csv_file = results_folder / f"unit_classifier_{recording_name}.csv"
 
-        print(f"Applying unit classifier to recording: {recording_name}")
+        try:
+            we = si.load_waveforms(postprocessed_folder, with_recording=False)
+            print(f"Applying unit classifier to recording: {recording_name}")
+        except:
+            print(f"Spike sorting failed on {recording_name}. Skipping unit classification")
+            # create an mock result file (needed for pipeline)
+            mock_df = pd.DataFrame()
+            mock_df.to_csv(unit_classifier_output_csv_file)
+            continue
 
         we = si.load_waveforms(postprocessed_folder, with_recording=False)
 

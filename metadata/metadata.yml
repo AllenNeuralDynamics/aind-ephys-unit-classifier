@@ -1,5 +1,15 @@
 metadata_version: 1
-name: aind-ephys-unit-classifier
-description: Basic structure of a capsule to be customized as needed.
+name: Unit Classifier Ecephys
+description: |-
+  This capsule is designed to automatically label spike sorted units for the AIND pipeline.
+
+  It uses pre-trained models to classify units as:
+
+  - noise (non-neuronal)
+  - MUA (multi-unit activity)
+  - SUA (single-unit activity)
+tags:
+- ecephys
 authors:
 - name: AIND
+- name: Alessio Buccino

@@ -1,4 +1,4 @@
-# hash:sha256:ef2f1b10ace67b14af1cad8aca0e6430cf1fec993f84fc4361a7624f0b2455b7
+# hash:sha256:dc65fb40b1acd1c32d5404b6752b797b1a395ffe12e0d3b501fef29571d71651
 ARG REGISTRY_HOST
 FROM $REGISTRY_HOST/codeocean/jupyterlab:3.6.1-miniconda4.12.0-python3.9-ubuntu20.04
 
@@ -12,7 +12,7 @@ ARG GIT_ACCESS_TOKEN
 COPY git-askpass /
 
 RUN pip install -U --no-cache-dir \
-    aind-data-schema==0.38.0 \
+    aind-data-schema==0.38.5 \
     imbalanced-learn==0.11.0 \
     lightgbm==4.1.0 \
     mlxtend==0.23.0 \

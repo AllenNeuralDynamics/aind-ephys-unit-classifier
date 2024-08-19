@@ -68,27 +68,27 @@ if __name__ == "__main__":
         # capsule mode
         assert len(ecephys_sorted_folders) == 1, "Attach one sorted asset at a time"
         ecephys_sorted_folder = ecephys_sorted_folders[0]
-        postprocessed_folder = ecephys_sorted_folder / "postprocessed"
+        postprocessed_base_folder = ecephys_sorted_folder / "postprocessed"
         session_name = ecephys_sorted_folder.name[: ecephys_sorted_folder.name.find("_sorted")]
         pipeline_mode = False
     elif (data_folder / "postprocessing_pipeline_output_test").is_dir():
         print("\n*******************\n**** TEST MODE ****\n*******************\n")
-        postprocessed_folder = data_folder / "postprocessing_pipeline_output_test"
+        postprocessed_base_folder = data_folder / "postprocessing_pipeline_output_test"
     else:
-        postprocessed_folder = data_folder
+        postprocessed_base_folder = data_folder
 
     if pipeline_mode:
         postprocessed_folders = [
-            p for p in postprocessed_folder.iterdir() if "postprocessed_" in p.name and "-sorting" not in p.name
+            p for p in postprocessed_base_folder.iterdir() if "postprocessed_" in p.name
         ]
     else:
-        postprocessed_folders = [p for p in postprocessed_folder.iterdir() if p.is_dir() and "-sorting" not in p.name]
+        postprocessed_folders = [p for p in postprocessed_base_folder.iterdir() if p.is_dir()]
 
     for postprocessed_folder in postprocessed_folders:
         datetime_start_unit_classifier = datetime.now()
         t_unit_classifier_start = time.perf_counter()
         if pipeline_mode:
-            recording_name = ("_").join(postprocessed_folder.name.split("_")[1:])
+            recording_name = ("_").join(postprocessed_folder.stem.split("_")[1:])
         else:
             recording_name = postprocessed_folder.name
         unit_classifier_output_process_json = results_folder / f"{data_process_prefix}_{recording_name}.json"

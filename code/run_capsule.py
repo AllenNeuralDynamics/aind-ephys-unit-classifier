@@ -24,16 +24,17 @@ VERSION = "1.0"
 
 data_folder = Path("../data")
 results_folder = Path("../results")
-this_folder = Path(__file__).parent
-n_jobs = -1
 
+this_folder = Path(__file__).parent
+
+n_jobs = -1
 job_kwargs = dict(n_jobs=n_jobs)
 
-unit_classifier_params = {}
 
 if __name__ == "__main__":
     ####### UNIT CLASSIFIER ########
     print("UNIT CLASSIFIER")
+    unit_classifier_params = {}
     unit_classifier_notes = ""
     t_unit_classifier_start_all = time.perf_counter()
 

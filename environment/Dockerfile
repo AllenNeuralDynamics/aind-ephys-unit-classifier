@@ -12,7 +12,7 @@ ARG GIT_ACCESS_TOKEN
 COPY git-askpass /
 
 RUN pip install -U --no-cache-dir \
-    aind-data-schema==0.38.5 \
+    aind-data-schema==1.0.0 \
     imbalanced-learn==0.11.0 \
     lightgbm==4.1.0 \
     mlxtend==0.23.0 \

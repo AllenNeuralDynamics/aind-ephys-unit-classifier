@@ -18,7 +18,7 @@ RUN pip install -U --no-cache-dir \
     umap-learn==0.5.4 \
     xgboost==2.0.2 \
     spikeinterface[full]==0.100.7 \
-    aind-data-schema==0.38.0 \
+    aind-data-schema==1.0.0 \
     wavpack-numcodecs==0.1.5
 
 COPY postInstall /

@@ -1,5 +1,5 @@
 metadata_version: 1
-name: Unit Classifier Ecephys
+name: Unit Classifier Ecephys (dev)
 description: |-
   This capsule is designed to automatically label spike sorted units for the AIND pipeline.
 

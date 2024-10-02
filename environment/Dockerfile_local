@@ -19,7 +19,7 @@ RUN pip install -U --no-cache-dir \
     xgboost==2.0.2 \
     spikeinterface[full]==0.100.7 \
     aind-data-schema==1.0.0 \
-    wavpack-numcodecs==0.1.5
+    wavpack-numcodecs==0.2.1
 
 COPY postInstall /
 RUN /postInstall

@@ -80,7 +80,7 @@ if __name__ == "__main__":
 
     if pipeline_mode:
         postprocessed_folders = [
-            p for p in postprocessed_base_folder.iterdir() if "postprocessed_" in p.name
+            p for p in postprocessed_base_folder.iterdir() if "postprocessed_" in p.name and "postprocessed-sorting" not in p.name
         ]
     else:
         postprocessed_folders = [p for p in postprocessed_base_folder.iterdir() if p.is_dir()]
@@ -92,11 +92,13 @@ if __name__ == "__main__":
             recording_name = ("_").join(postprocessed_folder.stem.split("_")[1:])
         else:
             recording_name = postprocessed_folder.name
+        if recording_name.endswith(".zarr"):
+            recording_name = recording_name[:recording_name.find(".zarr")]
         unit_classifier_output_process_json = results_folder / f"{data_process_prefix}_{recording_name}.json"
         unit_classifier_output_csv_file = results_folder / f"unit_classifier_{recording_name}.csv"
 
         try:
-            analyzer = si.load_sorting_analyzer(postprocessed_folder)
+            analyzer = si.load_sorting_analyzer_or_waveforms(postprocessed_folder)
             print(f"Applying unit classifier to recording: {recording_name}")
         except:
             print(f"Spike sorting failed on {recording_name}. Skipping unit classification")

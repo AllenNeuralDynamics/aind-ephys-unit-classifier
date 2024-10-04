@@ -1,4 +1,4 @@
-# hash:sha256:9f5c3e08e3c1da18f9eacf35a4d0e883f882b7aecb62a79f40b6a871b54a538b
+# hash:sha256:b74af9eee9f987a6584f32699723602280e499a724375f58e3a89cdfbe14419e
 ARG REGISTRY_HOST
 FROM $REGISTRY_HOST/codeocean/jupyterlab:3.6.1-miniconda4.12.0-python3.9-ubuntu20.04
 
@@ -23,3 +23,6 @@ RUN pip install -U --no-cache-dir \
     umap-learn==0.5.4 \
     wavpack-numcodecs==0.2.1 \
     xgboost==2.0.2
+
+COPY postInstall /
+RUN /postInstall

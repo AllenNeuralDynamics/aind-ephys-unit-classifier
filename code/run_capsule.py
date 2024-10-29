@@ -1,8 +1,10 @@
 """ top level run script """
+
 import warnings
 
 warnings.filterwarnings("ignore")
 
+import argparse
 import numpy as np
 from pathlib import Path
 import json
@@ -14,7 +16,7 @@ import pandas as pd
 import spikeinterface as si
 import spikeinterface.widgets as sw
 
-from utils import compute_missing_metrics, apply_unit_classifier
+from utils import retrieve_required_metrics, apply_unit_classifier
 
 # AIND
 from aind_data_schema.core.processing import DataProcess
@@ -30,8 +32,24 @@ this_folder = Path(__file__).parent
 n_jobs = -1
 job_kwargs = dict(n_jobs=n_jobs)
 
+parser = argparse.ArgumentParser(description="Unit classification ecephys data")
+
+skip_recomputation_group = parser.add_mutually_exclusive_group()
+skip_recomputation_help = (
+    "If True and some required metrics are not available, it will skip recomputation of those metrics. "
+    "In this case, unit classifier labels will not be computed."
+)
+skip_recomputation_group.add_argument(
+    "static_skip_recomputation", nargs="?", default="false", help=skip_recomputation_help
+)
+skip_recomputation_group.add_argument("--skip-recomputation-group", action="store_true", help=skip_recomputation_help)
+
 
 if __name__ == "__main__":
+    args = parser.parse_args()
+
+    SKIP_RECOMPUTATION = args.skip_recomputation or args.static_skip_recomputation == "true"
+
     ####### UNIT CLASSIFIER ########
     print("UNIT CLASSIFIER")
     unit_classifier_params = {}
@@ -80,7 +98,9 @@ if __name__ == "__main__":
 
     if pipeline_mode:
         postprocessed_folders = [
-            p for p in postprocessed_base_folder.iterdir() if "postprocessed_" in p.name and "postprocessed-sorting" not in p.name
+            p
+            for p in postprocessed_base_folder.iterdir()
+            if "postprocessed_" in p.name and "postprocessed-sorting" not in p.name
         ]
     else:
         postprocessed_folders = [p for p in postprocessed_base_folder.iterdir() if p.is_dir()]
@@ -93,7 +113,7 @@ if __name__ == "__main__":
         else:
             recording_name = postprocessed_folder.name
         if recording_name.endswith(".zarr"):
-            recording_name = recording_name[:recording_name.find(".zarr")]
+            recording_name = recording_name[: recording_name.find(".zarr")]
         unit_classifier_output_process_json = results_folder / f"{data_process_prefix}_{recording_name}.json"
         unit_classifier_output_csv_file = results_folder / f"unit_classifier_{recording_name}.csv"
 
@@ -107,7 +127,16 @@ if __name__ == "__main__":
             mock_df.to_csv(unit_classifier_output_csv_file)
             continue
 
-        input_metrics = compute_missing_metrics(analyzer, required_metrics, n_jobs=n_jobs, verbose=True)
+        input_metrics = retrieve_required_metrics(
+            analyzer, required_metrics, recompute_metrics=not SKIP_RECOMPUTATION, n_jobs=n_jobs, verbose=True
+        )
+
+        if input_metrics is None:
+            print(f"Missing required metrics for {recording_name}. Skipping unit classification")
+            # create an mock result file (needed for pipeline)
+            mock_df = pd.DataFrame()
+            mock_df.to_csv(unit_classifier_output_csv_file)
+            continue
 
         prediction_df = apply_unit_classifier(
             metrics=input_metrics, noise_neuron_classifier_pkl=noise_neuron_pkl, sua_mua_classifier_pkl=sua_mua_pkl

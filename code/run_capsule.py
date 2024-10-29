@@ -1,4 +1,4 @@
-""" top level run script """
+""" Unit classification based on pre-trained models """
 
 import warnings
 
@@ -40,15 +40,15 @@ skip_recomputation_help = (
     "In this case, unit classifier labels will not be computed."
 )
 skip_recomputation_group.add_argument(
-    "static_skip_recomputation", nargs="?", default="false", help=skip_recomputation_help
+    "static_skip_metrics_recomputation", nargs="?", default="false", help=skip_recomputation_help
 )
-skip_recomputation_group.add_argument("--skip-recomputation-group", action="store_true", help=skip_recomputation_help)
+skip_recomputation_group.add_argument("--skip-metrics-recomputation", action="store_true", help=skip_recomputation_help)
 
 
 if __name__ == "__main__":
     args = parser.parse_args()
 
-    SKIP_RECOMPUTATION = args.skip_recomputation or args.static_skip_recomputation == "true"
+    SKIP_METRICS_RECOMPUTATION = args.skip_metrics_recomputation or args.static_skip_metrics_recomputation == "true"
 
     ####### UNIT CLASSIFIER ########
     print("UNIT CLASSIFIER")
@@ -128,7 +128,7 @@ if __name__ == "__main__":
             continue
 
         input_metrics = retrieve_required_metrics(
-            analyzer, required_metrics, recompute_metrics=not SKIP_RECOMPUTATION, n_jobs=n_jobs, verbose=True
+            analyzer, required_metrics, recompute_metrics=not SKIP_METRICS_RECOMPUTATION, n_jobs=n_jobs, verbose=True
         )
 
         if input_metrics is None:

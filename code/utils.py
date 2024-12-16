@@ -63,9 +63,32 @@ qm_metrics_map = dict(
 )
 
 
-def compute_missing_metrics(analyzer, required_metrics, qm_params=None, verbose=False, n_jobs=1):
+def retrieve_required_metrics(
+    analyzer, required_metrics, qm_params=None, recompute_metrics=True, verbose=False, n_jobs=1
+):
     """
-    TODO
+    Compute missing metrics for a given sorting result.
+    If all required metrics are already present, return the existing metrics.
+
+    Parameters
+    ----------
+    analyzer: SortingAnalyzer
+        The sorting analyzer to compute/gather metrics for.
+    required_metrics: list
+        List of metrics to compute.
+    qm_params: dict
+        Parameters for quality metrics computation.
+    recompute_metrics: bool
+        If True, recompute all metrics. If False and metrics are missing, the function will
+        return None
+    verbose: bool
+        If True, print additional information.
+    n_jobs: int
+
+    Returns
+    -------
+    all_metrics: pd.DataFrame or None
+        DataFrame containing all metrics.
     """
     qm = analyzer.get_extension("quality_metrics").get_data()
     tm = analyzer.get_extension("template_metrics").get_data()
@@ -83,42 +106,47 @@ def compute_missing_metrics(analyzer, required_metrics, qm_params=None, verbose=
 
         return all_metrics
     else:
-        required_tm = [m for m in required_metrics if m in spost.get_template_metric_names()]
-        missing_tm_metrics = []
-        for m in required_tm:
-            if m not in all_metrics.columns:
-                missing_tm_metrics.append(m)
-        missing_tm_metrics = list(np.unique(missing_tm_metrics))
-        include_multi_channel_metrics = any(
-            [m in get_multi_channel_template_metric_names() for m in missing_tm_metrics]
-        )
-        if verbose:
-            print(f"Computing missing template metrics: {missing_tm_metrics}")
+        if recompute_metrics:
+            required_tm = [m for m in required_metrics if m in spost.get_template_metric_names()]
+            missing_tm_metrics = []
+            for m in required_tm:
+                if m not in all_metrics.columns:
+                    missing_tm_metrics.append(m)
+            missing_tm_metrics = list(np.unique(missing_tm_metrics))
+            include_multi_channel_metrics = any(
+                [m in get_multi_channel_template_metric_names() for m in missing_tm_metrics]
+            )
+            if verbose:
+                print(f"Computing missing template metrics: {missing_tm_metrics}")
 
-        tm_new = spost.compute_template_metrics(
-            analyzer, metric_names=missing_tm_metrics, include_multi_channel_metrics=include_multi_channel_metrics
-        )
+            tm_new = spost.compute_template_metrics(
+                analyzer, metric_names=missing_tm_metrics, include_multi_channel_metrics=include_multi_channel_metrics
+            )
 
-        required_qm = [m for m in required_metrics if m not in spost.get_template_metric_names()]
+            required_qm = [m for m in required_metrics if m not in spost.get_template_metric_names()]
 
-        missing_qm_metrics = []
-        for m in required_qm:
-            if m not in all_metrics.columns:
-                new_metric = qm_metrics_map[m] if m in qm_metrics_map else m
-                missing_qm_metrics.append(new_metric)
-        missing_qm_metrics = list(np.unique(missing_qm_metrics))
+            missing_qm_metrics = []
+            for m in required_qm:
+                if m not in all_metrics.columns:
+                    new_metric = qm_metrics_map[m] if m in qm_metrics_map else m
+                    missing_qm_metrics.append(new_metric)
+            missing_qm_metrics = list(np.unique(missing_qm_metrics))
 
-        if verbose:
-            print(f"Computing missing quality metrics: {missing_qm_metrics}")
-        qm_new = sqm.compute_quality_metrics(analyzer, metric_names=missing_qm_metrics, n_jobs=n_jobs, qm_params=qm_params)
+            if verbose:
+                print(f"Computing missing quality metrics: {missing_qm_metrics}")
+            qm_new = sqm.compute_quality_metrics(
+                analyzer, metric_names=missing_qm_metrics, n_jobs=n_jobs, qm_params=qm_params
+            )
 
-        all_metrics = all_metrics.merge(qm_new, left_index=True, right_index=True)
-        all_metrics = all_metrics.merge(tm_new, left_index=True, right_index=True)
+            all_metrics = all_metrics.merge(qm_new, left_index=True, right_index=True)
+            all_metrics = all_metrics.merge(tm_new, left_index=True, right_index=True)
 
-        # re-sort with correct order
-        all_metrics = all_metrics[required_metrics]
+            # re-sort with correct order
+            all_metrics = all_metrics[required_metrics]
 
-        return all_metrics
+            return all_metrics
+        else:
+            return None
 
 
 def apply_unit_classifier(metrics, noise_neuron_classifier_pkl, sua_mua_classifier_pkl):

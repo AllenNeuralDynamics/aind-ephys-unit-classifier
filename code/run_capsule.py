@@ -11,6 +11,7 @@ import json
 import time
 from datetime import datetime, timedelta
 import pandas as pd
+import logging
 
 # SPIKEINTERFACE
 import spikeinterface as si
@@ -20,6 +21,12 @@ from utils import retrieve_required_metrics, apply_unit_classifier
 
 # AIND
 from aind_data_schema.core.processing import DataProcess
+
+try:
+    from aind_log_utils import log
+    HAVE_AIND_LOG_UTILS = True
+except ImportError:
+    HAVE_AIND_LOG_UTILS = False
 
 URL = "https://github.com/AllenNeuralDynamics/aind-ephys-unit-classifier"
 VERSION = "1.0"
@@ -51,7 +58,7 @@ if __name__ == "__main__":
     SKIP_METRICS_RECOMPUTATION = args.skip_metrics_recomputation or args.static_skip_metrics_recomputation == "true"
 
     ####### UNIT CLASSIFIER ########
-    print("UNIT CLASSIFIER")
+    logging.info("UNIT CLASSIFIER")
     unit_classifier_params = {}
     unit_classifier_notes = ""
     t_unit_classifier_start_all = time.perf_counter()
@@ -66,6 +73,27 @@ if __name__ == "__main__":
         for p in data_folder.iterdir()
         if p.is_dir() and "ecephys" in p.name or "behavior" in p.name and "sorted" in p.name
     ]
+
+    # look for subject and data_description JSON files
+    subject_id = "undefined"
+    session_name = "undefined"
+    for f in data_folder.iterdir():
+        # the file name is {recording_name}_subject.json
+        if "subject.json" in f.name:
+            with open(f, "r") as file:
+                subject_id = json.load(file)["subject_id"]
+        # the file name is {recording_name}_data_description.json
+        if "data_description.json" in f.name:
+            with open(f, "r") as file:
+                session_name = json.load(file)["name"]
+
+    if HAVE_AIND_LOG_UTILS:
+        log.setup_logging(
+            "Curate Ecephys",
+            mouse_id=subject_id,
+            session_name=session_name,
+        )
+
     unit_classifier_model_folders = [
         p for p in this_folder.iterdir() if p.is_dir() and "unit_classifier_model" in p.name
     ]
@@ -91,7 +119,7 @@ if __name__ == "__main__":
         session_name = ecephys_sorted_folder.name[: ecephys_sorted_folder.name.find("_sorted")]
         pipeline_mode = False
     elif (data_folder / "postprocessing_pipeline_output_test").is_dir():
-        print("\n*******************\n**** TEST MODE ****\n*******************\n")
+        logging.info("\n*******************\n**** TEST MODE ****\n*******************\n")
         postprocessed_base_folder = data_folder / "postprocessing_pipeline_output_test"
     else:
         postprocessed_base_folder = data_folder
@@ -119,9 +147,9 @@ if __name__ == "__main__":
 
         try:
             analyzer = si.load_sorting_analyzer_or_waveforms(postprocessed_folder)
-            print(f"Applying unit classifier to recording: {recording_name}")
+            logging.info(f"Applying unit classifier to recording: {recording_name}")
         except:
-            print(f"Spike sorting failed on {recording_name}. Skipping unit classification")
+            logging.info(f"Spike sorting failed on {recording_name}. Skipping unit classification")
             # create an mock result file (needed for pipeline)
             mock_df = pd.DataFrame()
             mock_df.to_csv(unit_classifier_output_csv_file)
@@ -132,7 +160,7 @@ if __name__ == "__main__":
         )
 
         if input_metrics is None:
-            print(f"Missing required metrics for {recording_name}. Skipping unit classification")
+            logging.info(f"Missing required metrics for {recording_name}. Skipping unit classification")
             # create an mock result file (needed for pipeline)
             mock_df = pd.DataFrame()
             mock_df.to_csv(unit_classifier_output_csv_file)
@@ -149,9 +177,9 @@ if __name__ == "__main__":
         n_noise = int(np.sum(decoder_label == "noise"))
         n_units = int(len(analyzer.unit_ids))
 
-        print(f"\tNOISE: {n_noise} / {n_units}")
-        print(f"\tSUA: {n_sua} / {n_units}")
-        print(f"\tMUA: {n_mua} / {n_units}")
+        logging.info(f"\tNOISE: {n_noise} / {n_units}")
+        logging.info(f"\tSUA: {n_sua} / {n_units}")
+        logging.info(f"\tMUA: {n_mua} / {n_units}")
 
         unit_classifier_notes += f"NOISE: {n_noise} / {n_units}\n"
         unit_classifier_notes += f"SUA: {n_sua} / {n_units}\n"
@@ -189,4 +217,4 @@ if __name__ == "__main__":
 
     t_unit_classifier_end_all = time.perf_counter()
     elapsed_time_unit_classifier_all = np.round(t_unit_classifier_end_all - t_unit_classifier_start_all, 2)
-    print(f"UNIT CLASSIFIER time: {elapsed_time_unit_classifier_all}s")
+    logging.info(f"UNIT CLASSIFIER time: {elapsed_time_unit_classifier_all}s")

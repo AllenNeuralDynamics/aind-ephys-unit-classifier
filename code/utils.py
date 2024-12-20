@@ -90,6 +90,8 @@ def retrieve_required_metrics(
     all_metrics: pd.DataFrame or None
         DataFrame containing all metrics.
     """
+    import logging
+
     qm = analyzer.get_extension("quality_metrics").get_data()
     tm = analyzer.get_extension("template_metrics").get_data()
 
@@ -100,7 +102,7 @@ def retrieve_required_metrics(
 
     if all([m in all_metrics.columns for m in required_metrics]):
         if verbose:
-            print("All metrics available")
+            logging.info("All metrics available")
         # re-sort with correct order
         all_metrics = all_metrics[required_metrics]
 
@@ -117,7 +119,7 @@ def retrieve_required_metrics(
                 [m in get_multi_channel_template_metric_names() for m in missing_tm_metrics]
             )
             if verbose:
-                print(f"Computing missing template metrics: {missing_tm_metrics}")
+                logging.info(f"Computing missing template metrics: {missing_tm_metrics}")
 
             tm_new = spost.compute_template_metrics(
                 analyzer, metric_names=missing_tm_metrics, include_multi_channel_metrics=include_multi_channel_metrics
@@ -133,7 +135,7 @@ def retrieve_required_metrics(
             missing_qm_metrics = list(np.unique(missing_qm_metrics))
 
             if verbose:
-                print(f"Computing missing quality metrics: {missing_qm_metrics}")
+                logging.info(f"Computing missing quality metrics: {missing_qm_metrics}")
             qm_new = sqm.compute_quality_metrics(
                 analyzer, metric_names=missing_qm_metrics, n_jobs=n_jobs, qm_params=qm_params
             )

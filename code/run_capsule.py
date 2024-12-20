@@ -58,7 +58,6 @@ if __name__ == "__main__":
     SKIP_METRICS_RECOMPUTATION = args.skip_metrics_recomputation or args.static_skip_metrics_recomputation == "true"
 
     ####### UNIT CLASSIFIER ########
-    logging.info("UNIT CLASSIFIER")
     unit_classifier_params = {}
     unit_classifier_notes = ""
     t_unit_classifier_start_all = time.perf_counter()
@@ -93,6 +92,10 @@ if __name__ == "__main__":
             mouse_id=subject_id,
             session_name=session_name,
         )
+    else:
+        logging.basicConfig(level=logging.INFO, format="%(message)s")
+
+    logging.info("UNIT CLASSIFIER")
 
     unit_classifier_model_folders = [
         p for p in this_folder.iterdir() if p.is_dir() and "unit_classifier_model" in p.name
@@ -148,7 +151,7 @@ if __name__ == "__main__":
         try:
             analyzer = si.load_sorting_analyzer_or_waveforms(postprocessed_folder)
             logging.info(f"Applying unit classifier to recording: {recording_name}")
-        except:
+        except Exception as e:
             logging.info(f"Spike sorting failed on {recording_name}. Skipping unit classification")
             # create an mock result file (needed for pipeline)
             mock_df = pd.DataFrame()

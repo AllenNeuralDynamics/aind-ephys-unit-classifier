@@ -5,6 +5,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 import argparse
+import sys
 import numpy as np
 from pathlib import Path
 import json
@@ -88,12 +89,12 @@ if __name__ == "__main__":
 
     if HAVE_AIND_LOG_UTILS:
         log.setup_logging(
-            "Curate Ecephys",
-            mouse_id=subject_id,
-            session_name=session_name,
+            "Unit Classifier Ecephys",
+            subject_id=subject_id,
+            asset_name=session_name,
         )
     else:
-        logging.basicConfig(level=logging.INFO, format="%(message)s")
+        logging.basicConfig(level=logging.INFO, stream=sys.stdout, format="%(message)s")
 
     logging.info("UNIT CLASSIFIER")
 
